@@ -4,21 +4,25 @@
     <h1 class="text-center mb-4">Lista de Tarefas</h1>
 
     <div class="note-block mx-auto p-4">
-        <div class="text-end mb-3">
-            <a href="{{ route('tarefas.create') }}" class="btn btn-success">Nova Tarefa</a>
-        </div>
+        {{-- Mensagem se não houver tarefas --}}
+        @if ($tarefas->isEmpty())
+            <div class="alert alert-info text-center">
+                <i class="fas fa-check-circle fa-lg"></i> Nenhuma tarefa encontrada. Crie uma nova!
+            </div>
+        @endif
 
-        <table class="table table-borderless table-striped note-table">
+        <table class="table table-borderless table-striped note-table align-middle">
             <thead>
                 <tr>
                     <th>Título</th>
                     <th>Criada em</th>
+                    <th>Status</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-            @foreach ($tarefas as $tarefa)
-                    <tr data-id="{{ $tarefa->id }}">
+                @foreach ($tarefas as $tarefa)
+                    <tr data-id="{{ $tarefa->id }}" class="{{ $tarefa->status === 'concluida' ? 'concluida' : '' }}">
                         <td class="titulo" style="{{ $tarefa->status === 'concluida' ? 'text-decoration: line-through;' : '' }}">
                             {{ $tarefa->titulo }}
                         </td>
@@ -26,61 +30,123 @@
                             {{ $tarefa->created_at->format('d/m/Y') }}
                         </td>
                         <td>
-                            <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
-                                    data-status="{{ $tarefa->status }}">
-                                {{ $tarefa->status === 'concluida' ? 'Concluída' : 'Pendente' }}
-                            </button>
-                            <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-info btn-sm">Ver</a>
-                            <a href="{{ route('tarefas.edit', $tarefa) }}" class="btn btn-primary btn-sm">Editar</a>
-                            <form action="{{ route('tarefas.destroy', $tarefa) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-danger btn-sm" onclick="return confirm('Deseja excluir?')">Excluir</button>
-                            </form>
+                           
+                                <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
+                                    data-status="{{ $tarefa->status }}"  title = "Alterar Status">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                           
+                           
+                            <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
+                            {{ ucfirst($tarefa->status) }}
+                            </span>
+                            
+                            
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-info btn-sm" title = "Ver Detalhes">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ route('tarefas.edit', $tarefa) }}" class="btn btn-primary btn-sm"  title = "Editar Tarefa">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ route('tarefas.destroy', $tarefa) }}" method="POST" onsubmit="return confirm('Deseja excluir?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-danger btn-sm"  title = "Excluir Tarefa">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
-
     </div>
+
+    {{-- Botão flutuante para nova tarefa --}}
+    <a href="{{ route('tarefas.create') }}"
+       class="btn btn-success rounded-circle position-fixed shadow"
+       style="bottom: 20px; right: 20px; width: 60px; height: 60px; font-size: 30px; text-align: center; line-height: 42px;">
+        +
+    </a>
 @endsection
+
 @section('scripts')
-<script>
-   document.querySelectorAll('.status-toggle').forEach(function(button) {
-    button.addEventListener('click', function() {
-        const row = this.closest('tr');
-        const id = row.dataset.id;
-        const currentStatus = this.dataset.status;
-        const newStatus = currentStatus === 'concluida' ? 'pendente' : 'concluida';
 
-        fetch(`/tarefas/${id}/status`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            },
-            body: JSON.stringify({ status: newStatus })
-        })
-        .then(response => {
-            if (response.ok) {
-                // Atualiza atributo data-status e texto
-                this.dataset.status = newStatus;
-                this.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                this.classList.toggle('btn-success', newStatus === 'concluida');
-                this.classList.toggle('btn-secondary', newStatus !== 'concluida');
+    {{-- JS para status toggle --}}
+    <script>
+        document.querySelectorAll('.status-toggle').forEach(function(button) {
+            button.addEventListener('click', function () {
+                const row = this.closest('tr');
+                const id = row.dataset.id;
+                const currentStatus = this.dataset.status;
+                const newStatus = currentStatus === 'concluida' ? 'pendente' : 'concluida';
 
-                // Atualiza risco das colunas título e criada em
-                row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
-                row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                fetch(`/tarefas/${id}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                    body: JSON.stringify({status: newStatus})
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            this.dataset.status = newStatus;
+                            this.classList.toggle('btn-success', newStatus === 'concluida');
+                            this.classList.toggle('btn-secondary', newStatus !== 'concluida');
 
-            } else {
-                alert('Erro ao atualizar o status.');
-            }
+                            // Badge
+                            const badge = row.querySelector('.badge');
+                            badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                            badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
+
+                            // Riscado
+                            row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                            row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+
+                            // Cor da linha
+                            row.classList.toggle('concluida', newStatus === 'concluida');
+
+                            // Efeito pulse
+                            row.classList.add('pulse');
+                            setTimeout(() => row.classList.remove('pulse'), 300);
+                        } else {
+                            alert('Erro ao atualizar o status.');
+                        }
+                    });
+            });
         });
-    });
-});
+    </script>
 
+    {{-- Estilos extras --}}
+    <style>
+        .note-table tbody tr:hover {
+            background-color: #f0f8ff;
+            transition: background-color 0.3s ease;
+        }
 
-</script>
+        .concluida {
+            background-color: #e6ffe6 !important;
+        }
+
+        .pulse {
+            animation: pulse 0.3s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .rounded-circle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
 @endsection

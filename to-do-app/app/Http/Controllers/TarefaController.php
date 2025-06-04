@@ -4,91 +4,128 @@ namespace App\Http\Controllers;
 
 use App\Models\Tarefa;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 class TarefaController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
         $tarefas = Tarefa::latest()->get();
         return view('tarefas.index', compact('tarefas'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-       return view('tarefas.create');
+        return view('tarefas.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'titulo' => 'required|max:255',
-            'descricao' => 'nullable',
-            'status' => 'in:pendente,concluida',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'titulo' => 'required|max:255',
+                'descricao' => 'nullable',
+                'status' => 'in:pendente,concluida',
+            ], [
+                'titulo.required' => 'O campo título é obrigatório.',
+                'titulo.max' => 'O título não pode ter mais de 255 caracteres.',
+                'status.in' => 'O status deve ser "pendente" ou "concluida".',
+            ]);
 
-        Tarefa::create($request->all());
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('error', 'Erro na validação. Verifique os campos e tente novamente.');
+            }
 
-        return redirect()->route('tarefas.index')->with('success', 'Tarefa criada com sucesso!');
+            Tarefa::create($request->all());
+
+            return redirect()->route('tarefas.index')->with('success', 'Tarefa criada com sucesso!');
+        } catch (Exception $e) {
+            Log::error('Erro ao criar tarefa: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Ocorreu um erro ao criar a tarefa.');
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Tarefa $tarefa)
     {
         return view('tarefas.show', compact('tarefa'));
     }
-    /**
-     * Show the form for editing the specified resource.
-     */
+
     public function edit(Tarefa $tarefa)
     {
         return view('tarefas.edit', compact('tarefa'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Tarefa $tarefa)
     {
-        $request->validate([
-            'titulo' => 'required|max:255',
-            'descricao' => 'nullable',
-            'status' => 'in:pendente,concluida',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'titulo' => 'required|max:255',
+                'descricao' => 'nullable',
+                'status' => 'in:pendente,concluida',
+            ], [
+                'titulo.required' => 'O campo título é obrigatório.',
+                'titulo.max' => 'O título não pode ter mais de 255 caracteres.',
+                'status.in' => 'O status deve ser "pendente" ou "concluida".',
+            ]);
 
-        $tarefa->update($request->all());
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput()
+                    ->with('error', 'Erro na validação. Verifique os campos e tente novamente.');
+            }
 
-        return redirect()->route('tarefas.index')->with('success', 'Tarefa atualizada com sucesso!');
+            $tarefa->update($request->all());
+
+            return redirect()->route('tarefas.index')->with('success', 'Tarefa atualizada com sucesso!');
+        } catch (Exception $e) {
+            Log::error('Erro ao atualizar tarefa: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Ocorreu um erro ao atualizar a tarefa.');
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Tarefa $tarefa)
     {
-        $tarefa->delete();
-        return redirect()->route('tarefas.index')->with('success', 'Tarefa deletada com sucesso!');
+        try {
+            $tarefa->delete();
+            return redirect()->route('tarefas.index')->with('success', 'Tarefa deletada com sucesso!');
+        } catch (Exception $e) {
+            Log::error('Erro ao deletar tarefa: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Ocorreu um erro ao deletar a tarefa.');
+        }
     }
 
     public function atualizarStatus(Request $request, Tarefa $tarefa)
     {
-        $request->validate([
-            'status' => 'required|in:pendente,concluida',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pendente,concluida',
+            ], [
+                'status.required' => 'O campo status é obrigatório.',
+                'status.in' => 'O status deve ser "pendente" ou "concluida".',
+            ]);
 
-        $tarefa->update(['status' => $request->status]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
-        return response()->json(['success' => true]);
+            $tarefa->update(['status' => $request->status]);
+
+            return response()->json(['success' => true]);
+        } catch (Exception $e) {
+            Log::error('Erro ao atualizar status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro interno ao atualizar status.'
+            ], 500);
+        }
     }
-
 }
