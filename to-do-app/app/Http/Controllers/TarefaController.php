@@ -10,11 +10,29 @@ use Exception;
 
 class TarefaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $tarefas = Tarefa::latest()->get();
+        $query = Tarefa::query();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('titulo')) {
+            $query->where('titulo', 'like', '%' . $request->titulo . '%');
+        }
+
+        // Ordenar pendentes primeiro, depois concluidas,
+        // dentro de cada grupo do mais antigo para o mais novo
+        $query->orderByRaw("CASE WHEN status = 'pendente' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'asc');
+
+        $tarefas = $query->paginate(5)->withQueryString();
+
         return view('tarefas.index', compact('tarefas'));
     }
+
+
 
     public function create()
     {

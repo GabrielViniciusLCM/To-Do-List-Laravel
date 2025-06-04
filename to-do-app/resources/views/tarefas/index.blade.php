@@ -5,11 +5,41 @@
 
     <div class="note-block mx-auto p-4">
         {{-- Mensagem se não houver tarefas --}}
-        @if ($tarefas->isEmpty())
+        @if ($tarefas->isEmpty() && (request('titulo') || request('status')))
+            <div class="alert alert-warning text-center">
+                <i class="fas fa-search fa-lg"></i> Nenhuma tarefa encontrada com os filtros aplicados.
+            </div>
+        @elseif ($tarefas->isEmpty())
             <div class="alert alert-info text-center">
                 <i class="fas fa-check-circle fa-lg"></i> Nenhuma tarefa encontrada. Crie uma nova!
             </div>
         @endif
+       
+
+        <form method="GET" action="{{ route('tarefas.index') }}" class="row g-2 mb-4">
+            <div class="col-md-4">
+                <input type="text" name="titulo" value="{{ request('titulo') }}" class="form-control" placeholder="Filtrar por título">
+            </div>
+
+            <div class="col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">Todos os status</option>
+                    <option value="pendente" {{ request('status') == 'pendente' ? 'selected' : '' }}>Pendente</option>
+                    <option value="concluida" {{ request('status') == 'concluida' ? 'selected' : '' }}>Concluída</option>
+                </select>
+            </div>
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+                <a href="{{ route('tarefas.index') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Limpar
+                </a>
+            </div>
+        </form>
+        <br/>
+
 
         <table class="table table-borderless table-striped note-table align-middle">
             <thead>
@@ -64,6 +94,10 @@
                 @endforeach
             </tbody>
         </table>
+        {{-- Paginação --}}
+        <div class="d-flex justify-content-center mt-4">
+            {{ $tarefas->links('pagination::bootstrap-5') }}
+        </div>
     </div>
 
     {{-- Botão flutuante para nova tarefa --}}
@@ -148,5 +182,24 @@
             justify-content: center;
             align-items: center;
         }
+
+        .pagination .page-link {
+            color: #8b4513;
+            background-color: #fff8dc;
+            border: 1px solid #deb887;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: #f4a460;
+            border-color: #cd853f;
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            background-color: #ffe4b5;
+            border-color: #d2b48c;
+        }
+
+        
     </style>
 @endsection
