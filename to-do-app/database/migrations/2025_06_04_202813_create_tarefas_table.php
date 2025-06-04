@@ -10,10 +10,13 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
+   {
         Schema::create('tarefas', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('titulo', 255);
+            $table->text('descricao')->nullable();
+            $table->enum('status', ['pendente', 'concluida'])->default('pendente');
+            $table->timestamps(); // inclui created_at e updated_at
         });
     }
 
