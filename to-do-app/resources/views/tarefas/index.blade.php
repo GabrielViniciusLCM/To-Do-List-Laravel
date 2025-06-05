@@ -1,5 +1,17 @@
 @extends('layout')
 
+@section('css')
+<style>
+    #celebracao {
+        transition: opacity 0.5s ease-in-out;
+        opacity: 0;
+    }
+    #celebracao.show {
+        opacity: 1;
+    }
+</style>
+@endsection
+
 @section('content')
 @auth
     <div class="text-center mb-4">
@@ -118,6 +130,12 @@
         style="bottom: 20px; right: 20px; width: 60px; height: 60px; font-size: 30px; text-align: center; line-height: 42px;">
         +
     </a>
+    <div id="celebracao" class="alert alert-success text-center d-none" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1050;">
+        🎉 Parabéns! Você concluiu uma tarefa!
+    </div>
+    <div id="apoio" class="alert alert-info text-center d-none" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1050;">
+        💪 Não desanime! Todo progresso é importante. Você consegue!
+    </div>
 @endauth
 
 @guest
@@ -146,6 +164,31 @@
             })
             .then(response => {
                 if (!response.ok) throw new Error('Erro ao atualizar o status.');
+                if (newStatus === 'concluida') {
+                    const celebracao = document.getElementById('celebracao');
+                    celebracao.classList.remove('d-none');
+                    celebracao.classList.add('show');
+
+                    setTimeout(() => {
+                        celebracao.classList.add('d-none');
+                        celebracao.classList.remove('show');
+                        location.reload();
+                    }, 2000);
+                } else if (newStatus === 'pendente') {
+                    const apoio = document.getElementById('apoio');
+                    apoio.classList.remove('d-none');
+                    apoio.classList.add('show');
+
+                    setTimeout(() => {
+                        apoio.classList.add('d-none');
+                        apoio.classList.remove('show');
+                        location.reload();
+                    }, 3000);
+                } else {
+                    location.reload();
+                }
+
+
 
                 // Atualizações visuais
                 this.dataset.status = newStatus;
