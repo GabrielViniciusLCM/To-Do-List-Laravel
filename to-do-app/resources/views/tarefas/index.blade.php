@@ -54,7 +54,13 @@
                 </a>
             </div>
         </form>
-        @if (isset($todasConcluidas) && $todasConcluidas && $tarefas->currentPage() == 1)
+        @if (
+                isset($todasConcluidas) &&
+                $todasConcluidas &&
+                $tarefas->currentPage() == 1 &&
+                $tarefas->count() > 0 &&
+                request('status') !== 'deletada'
+            )
             <div id="celebracao" class="alert alert-success text-center show">
                 🥳 Você conseguiu! Todas as suas tarefas estão concluídas!
             </div>

@@ -88,13 +88,18 @@ class TarefaController extends Controller
 
     public function show(Tarefa $tarefa)
     {
+        if ($tarefa->user_id !== auth()->id()) {
+            return redirect()->route('tarefas.index')
+                ->with('error', 'Você não tem permissão para fazer isso.');
+        }
         return view('tarefas.show', compact('tarefa'));
     }
 
     public function edit(Tarefa $tarefa)
     {
         if ($tarefa->user_id !== auth()->id()) {
-            abort(403, 'Acesso não autorizado');
+            return redirect()->route('tarefas.index')
+                ->with('error', 'Você não tem permissão para fazer isso.');
         }
         return view('tarefas.edit', compact('tarefa'));
     }
@@ -103,7 +108,8 @@ class TarefaController extends Controller
     {
         try {
             if ($tarefa->user_id !== auth()->id()) {
-                abort(403, 'Acesso não autorizado');
+                return redirect()->route('tarefas.index')
+                    ->with('error', 'Você não tem permissão para fazer isso.');
             }
             $validator = Validator::make($request->all(), [
                 'titulo' => 'required|max:255',
@@ -135,7 +141,8 @@ class TarefaController extends Controller
     {
         try {
             if ($tarefa->user_id !== auth()->id()) {
-                abort(403, 'Acesso não autorizado');
+                return redirect()->route('tarefas.index')
+                    ->with('error', 'Você não tem permissão para fazer isso.');
             }
             $tarefa->delete();
             return redirect()->route('tarefas.index')->with('success', 'Tarefa deletada com sucesso!');
@@ -149,7 +156,8 @@ class TarefaController extends Controller
     {
         try {
             if ($tarefa->user_id !== auth()->id()) {
-                abort(403, 'Acesso não autorizado');
+                return redirect()->route('tarefas.index')
+                    ->with('error', 'Você não tem permissão para fazer isso.');
             }
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pendente,concluida',
