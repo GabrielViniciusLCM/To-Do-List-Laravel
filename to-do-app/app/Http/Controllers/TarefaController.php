@@ -41,7 +41,12 @@ class TarefaController extends Controller
         // Paginação (5 por página)
         $tarefas = $query->paginate(5)->withQueryString();
 
-        return view('tarefas.index', compact('tarefas'));
+        $allTarefas = (clone $query)->get();
+        $todasConcluidas = $allTarefas->isNotEmpty() && $allTarefas->every(function ($tarefa) {
+            return $tarefa->status === 'concluida';
+        });
+
+        return view('tarefas.index', compact('tarefas', 'todasConcluidas'));
     }
 
 

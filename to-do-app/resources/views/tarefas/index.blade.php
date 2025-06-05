@@ -54,6 +54,11 @@
                 </a>
             </div>
         </form>
+        @if (isset($todasConcluidas) && $todasConcluidas && $tarefas->currentPage() == 1)
+            <div id="celebracao" class="alert alert-success text-center show">
+                🥳 Você conseguiu! Todas as suas tarefas estão concluídas!
+            </div>
+        @endif
 
         <table class="table table-borderless table-striped note-table align-middle">
             <thead>
