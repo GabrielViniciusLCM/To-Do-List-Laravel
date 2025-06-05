@@ -258,6 +258,7 @@
 
                 row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
                 row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                row.querySelector('.badge-prioridade').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
                 row.classList.toggle('concluida', newStatus === 'concluida');
 
                 row.classList.add('pulse');
