@@ -13,6 +13,7 @@ class TarefaController extends Controller
     public function index(Request $request)
     {
         $query = Tarefa::query();
+        $query = Tarefa::where('user_id', auth()->id());
 
         // Verifica se quer filtrar só deletadas
 
@@ -70,7 +71,7 @@ class TarefaController extends Controller
                     ->withInput()
                     ->with('error', 'Erro na validação. Verifique os campos e tente novamente.');
             }
-
+            $request->merge(['user_id' => auth()->id()]);
             Tarefa::create($request->all());
 
             return redirect()->route('tarefas.index')->with('success', 'Tarefa criada com sucesso!');
@@ -87,12 +88,18 @@ class TarefaController extends Controller
 
     public function edit(Tarefa $tarefa)
     {
+        if ($tarefa->user_id !== auth()->id()) {
+            abort(403, 'Acesso não autorizado');
+        }
         return view('tarefas.edit', compact('tarefa'));
     }
 
     public function update(Request $request, Tarefa $tarefa)
     {
         try {
+            if ($tarefa->user_id !== auth()->id()) {
+                abort(403, 'Acesso não autorizado');
+            }
             $validator = Validator::make($request->all(), [
                 'titulo' => 'required|max:255',
                 'descricao' => 'nullable',
@@ -122,6 +129,9 @@ class TarefaController extends Controller
     public function destroy(Tarefa $tarefa)
     {
         try {
+            if ($tarefa->user_id !== auth()->id()) {
+                abort(403, 'Acesso não autorizado');
+            }
             $tarefa->delete();
             return redirect()->route('tarefas.index')->with('success', 'Tarefa deletada com sucesso!');
         } catch (Exception $e) {
@@ -133,6 +143,9 @@ class TarefaController extends Controller
     public function atualizarStatus(Request $request, Tarefa $tarefa)
     {
         try {
+            if ($tarefa->user_id !== auth()->id()) {
+                abort(403, 'Acesso não autorizado');
+            }
             $validator = Validator::make($request->all(), [
                 'status' => 'required|in:pendente,concluida',
             ], [

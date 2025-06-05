@@ -1,9 +1,13 @@
 @extends('layout')
 
 @section('content')
-    <h1 class="text-center mb-4">Lista de Tarefas</h1>
+@auth
+    <div class="text-center mb-4">
+        <h1>Lista de Tarefas de {{ Auth::user()->name }}</h1>
+    </div>
 
     <div class="note-block mx-auto p-4">
+
         {{-- Mensagem se não houver tarefas --}}
         @if ($tarefas->isEmpty() && (request('titulo') || request('status')))
             <div class="alert alert-warning text-center">
@@ -14,7 +18,6 @@
                 <i class="fas fa-check-circle fa-lg"></i> Nenhuma tarefa encontrada. Crie uma nova!
             </div>
         @endif
-       
 
         <form method="GET" action="{{ route('tarefas.index') }}" class="row g-2 mb-4">
             <div class="col-md-4">
@@ -23,7 +26,7 @@
 
             <div class="col-md-4">
                 <select name="status" class="form-select">
-                    <option value="">Todos os status</option>
+                    <option value="">Pendentes e Concluidas</option>
                     <option value="pendente" {{ request('status') == 'pendente' ? 'selected' : '' }}>Pendente</option>
                     <option value="concluida" {{ request('status') == 'concluida' ? 'selected' : '' }}>Concluída</option>
                     <option value="deletada" {{ request('status') == 'deletada' ? 'selected' : '' }}>Deletadas</option>
@@ -39,8 +42,6 @@
                 </a>
             </div>
         </form>
-        <br/>
-
 
         <table class="table table-borderless table-striped note-table align-middle">
             <thead>
@@ -63,10 +64,9 @@
                         <td>
                             @if (!$tarefa->trashed())
                                 <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
-                                    data-status="{{ $tarefa->status }}"  title="Alterar Status">
+                                    data-status="{{ $tarefa->status }}" title="Alterar Status">
                                     <i class="fas fa-check"></i>
                                 </button>
-
                                 <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
                                     {{ ucfirst($tarefa->status) }}
                                 </span>
@@ -105,6 +105,7 @@
                 @endforeach
             </tbody>
         </table>
+
         {{-- Paginação --}}
         <div class="d-flex justify-content-center mt-4">
             {{ $tarefas->links('pagination::bootstrap-5') }}
@@ -117,100 +118,53 @@
         style="bottom: 20px; right: 20px; width: 60px; height: 60px; font-size: 30px; text-align: center; line-height: 42px;">
         +
     </a>
-   
+@endauth
+
+@guest
+    <div class="alert alert-warning text-center">
+        Você precisa <a href="{{ route('login') }}">entrar</a> para ver suas tarefas.
+    </div>
+@endguest
 @endsection
 
 @section('scripts')
-    {{-- JS para status toggle --}}
-    <script>
-        document.querySelectorAll('.status-toggle').forEach(function(button) {
-            button.addEventListener('click', function () {
-                const row = this.closest('tr');
-                const id = row.dataset.id;
-                const currentStatus = this.dataset.status;
-                const newStatus = currentStatus === 'concluida' ? 'pendente' : 'concluida';
+<script>
+    document.querySelectorAll('.status-toggle').forEach(button => {
+        button.addEventListener('click', function () {
+            const row = this.closest('tr');
+            const id = row.dataset.id;
+            const currentStatus = this.dataset.status;
+            const newStatus = currentStatus === 'concluida' ? 'pendente' : 'concluida';
 
-                fetch(`/tarefas/${id}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    },
-                    body: JSON.stringify({status: newStatus})
-                })
-                .then(response => {
-                    if (response.ok) {
-                        this.dataset.status = newStatus;
-                        this.classList.toggle('btn-success', newStatus === 'concluida');
-                        this.classList.toggle('btn-secondary', newStatus !== 'concluida');
+            fetch(`/tarefas/${id}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Erro ao atualizar o status.');
 
-                        // Badge
-                        const badge = row.querySelector('.badge');
-                        badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                        badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
+                // Atualizações visuais
+                this.dataset.status = newStatus;
+                this.classList.toggle('btn-success', newStatus === 'concluida');
+                this.classList.toggle('btn-secondary', newStatus !== 'concluida');
 
-                        // Riscado
-                        row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
-                        row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                const badge = row.querySelector('.badge');
+                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
 
-                        // Cor da linha
-                        row.classList.toggle('concluida', newStatus === 'concluida');
+                row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                row.classList.toggle('concluida', newStatus === 'concluida');
 
-                        // Efeito pulse
-                        row.classList.add('pulse');
-                        setTimeout(() => row.classList.remove('pulse'), 300);
-                    } else {
-                        alert('Erro ao atualizar o status.');
-                    }
-                });
-            });
+                row.classList.add('pulse');
+                setTimeout(() => row.classList.remove('pulse'), 300);
+            })
+            .catch(() => alert('Erro ao atualizar o status.'));
         });
-    </script>
-
-    {{-- Estilos extras --}}
-    <style>
-        .note-table tbody tr:hover {
-            background-color: #f0f8ff;
-            transition: background-color 0.3s ease;
-        }
-
-        .concluida {
-            background-color: #e6ffe6 !important;
-        }
-
-        .pulse {
-            animation: pulse 0.3s ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
-
-        .rounded-circle {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .pagination .page-link {
-            color: #8b4513;
-            background-color: #fff8dc;
-            border: 1px solid #deb887;
-        }
-
-        .pagination .page-item.active .page-link {
-            background-color: #f4a460;
-            border-color: #cd853f;
-            color: white;
-        }
-
-        .pagination .page-link:hover {
-            background-color: #ffe4b5;
-            border-color: #d2b48c;
-        }
-
-        
-    </style>
+    });
+</script>
 @endsection
