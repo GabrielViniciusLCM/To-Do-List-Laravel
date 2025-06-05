@@ -9,6 +9,29 @@
     #celebracao.show {
         opacity: 1;
     }
+    /* Estilos para os badges de prioridade */
+    .badge-prioridade {
+        text-transform: capitalize;
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        border-radius: 0.375rem;
+        font-size: 0.875em;
+        display: inline-block;
+        /* Override Bootstrap badge base styles */
+        color: white !important;
+    }
+    .prioridade-alta {
+        background-color: #dc3545 !important; /* vermelho */
+        color: white !important;
+    }
+    .prioridade-media {
+        background-color: #ffc107 !important; /* amarelo */
+        color: black !important;
+    }
+    .prioridade-baixa {
+        background-color: #198754 !important; /* verde */
+        color: white !important;
+    }
 </style>
 @endsection
 
@@ -45,6 +68,15 @@
                 </select>
             </div>
 
+            <div class="col-md-4">
+                <select name="prioridade" class="form-select">
+                    <option value="">Todas as Prioridades</option>
+                    <option value="alta" {{ request('prioridade') == 'alta' ? 'selected' : '' }}>Alta</option>
+                    <option value="media" {{ request('prioridade') == 'media' ? 'selected' : '' }}>Média</option>
+                    <option value="baixa" {{ request('prioridade') == 'baixa' ? 'selected' : '' }}>Baixa</option>
+                </select>
+            </div>
+
             <div class="col-md-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-filter"></i> Filtrar
@@ -59,7 +91,8 @@
                 $todasConcluidas &&
                 $tarefas->currentPage() == 1 &&
                 $tarefas->count() > 0 &&
-                request('status') !== 'deletada'
+                request('status') == null &&
+                request('prioridade') == null
             )
             <div id="celebracao" class="alert alert-success text-center show">
                 🥳 Você conseguiu! Todas as suas tarefas estão concluídas!
@@ -69,15 +102,26 @@
         <table class="table table-borderless table-striped note-table align-middle">
             <thead>
                 <tr>
+                    <th>Status</th>
                     <th>Título</th>
                     <th>Criada em</th>
-                    <th>Status</th>
+                    <th>Prioridade</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($tarefas as $tarefa)
                     <tr data-id="{{ $tarefa->id }}" class="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'concluida' : '' }}">
+                        <td>
+                            @if (!$tarefa->trashed())
+                                <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
+                                    data-status="{{ $tarefa->status }}" title="Alterar Status">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            @else
+                                <span class="badge bg-danger">Deletada</span>
+                            @endif
+                        </td>
                         <td class="titulo" style="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'text-decoration: line-through;' : '' }}">
                             {{ $tarefa->titulo }}
                         </td>
@@ -85,22 +129,24 @@
                             {{ $tarefa->created_at->format('d/m/Y') }}
                         </td>
                         <td>
-                            @if (!$tarefa->trashed())
-                                <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
-                                    data-status="{{ $tarefa->status }}" title="Alterar Status">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
-                                    {{ ucfirst($tarefa->status) }}
-                                </span>
-                            @else
-                                <span class="badge bg-danger">Deletada</span>
-                            @endif
+                            {{-- Badge para Prioridade --}}
+                            @php
+                                $prioridadeClass = match($tarefa->prioridade ?? 'media') {
+                                    'alta' => 'prioridade-alta',
+                                    'media' => 'prioridade-media',
+                                    'baixa' => 'prioridade-baixa',
+                                    default => 'prioridade-media',
+                                };
+                            @endphp
+                           <span class="badge-prioridade {{ $prioridadeClass }}" 
+                                style="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'text-decoration: line-through;' : '' }}">
+                                {{ ucfirst($tarefa->prioridade ?? 'media') }}
+                            </span>
                         </td>
                         <td>
                             <div class="d-flex gap-1">
                                 @if (!$tarefa->trashed())
-                                    <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-info btn-sm" title="Ver Detalhes">
+                                    <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-secondary btn-sm" title="Ver Detalhes">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     <a href="{{ route('tarefas.edit', $tarefa) }}" class="btn btn-primary btn-sm" title="Editar Tarefa">
@@ -199,16 +245,16 @@
                     location.reload();
                 }
 
-
-
                 // Atualizações visuais
                 this.dataset.status = newStatus;
                 this.classList.toggle('btn-success', newStatus === 'concluida');
                 this.classList.toggle('btn-secondary', newStatus !== 'concluida');
 
                 const badge = row.querySelector('.badge');
-                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
+                if (badge) {
+                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                    badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
+                }
 
                 row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
                 row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';

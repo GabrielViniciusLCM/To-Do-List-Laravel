@@ -11,7 +11,7 @@ class Tarefa extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['titulo', 'descricao', 'status', 'user_id'];
+    protected $fillable = ['titulo', 'descricao', 'status', 'user_id', 'prioridade'];
     
     public function user(): BelongsTo
     {

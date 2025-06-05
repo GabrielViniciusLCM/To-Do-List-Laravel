@@ -34,13 +34,22 @@ class TarefaController extends Controller
             $query->where('status', $request->status);
         }
 
-        // Ordenação: pendentes primeiro, depois concluidas, dentro de cada grupo do mais antigo para o mais novo
+        if ($request->filled('prioridade') && in_array($request->prioridade, ['alta', 'media', 'baixa'])) {
+            $query->where('prioridade', $request->prioridade);
+        }
+
+
         $query->orderByRaw("CASE WHEN status = 'pendente' THEN 0 ELSE 1 END")
-            ->orderBy('created_at', 'asc');
+        ->orderByRaw("CASE prioridade
+                        WHEN 'alta' THEN 0
+                        WHEN 'media' THEN 1
+                        WHEN 'baixa' THEN 2
+                        ELSE 3
+                    END")
+        ->orderBy('created_at', 'asc');
 
         // Paginação (5 por página)
         $tarefas = $query->paginate(5)->withQueryString();
-
         $allTarefas = (clone $query)->get();
         $todasConcluidas = $allTarefas->isNotEmpty() && $allTarefas->every(function ($tarefa) {
             return $tarefa->status === 'concluida';
@@ -64,12 +73,14 @@ class TarefaController extends Controller
                 'titulo' => 'required|max:255',
                 'descricao' => 'nullable',
                 'status' => 'in:pendente,concluida',
+                'prioridade' => 'required|in:alta,media,baixa',
             ], [
                 'titulo.required' => 'O campo título é obrigatório.',
                 'titulo.max' => 'O título não pode ter mais de 255 caracteres.',
                 'status.in' => 'O status deve ser "pendente" ou "concluida".',
+                'prioridade.required' => 'A prioridade é obrigatória.',
+                'prioridade.in' => 'A prioridade deve ser alta, média ou baixa.',
             ]);
-
             if ($validator->fails()) {
                 return redirect()->back()
                     ->withErrors($validator)
@@ -115,10 +126,14 @@ class TarefaController extends Controller
                 'titulo' => 'required|max:255',
                 'descricao' => 'nullable',
                 'status' => 'in:pendente,concluida',
+                'prioridade' => 'required|in:alta,media,baixa',
             ], [
                 'titulo.required' => 'O campo título é obrigatório.',
                 'titulo.max' => 'O título não pode ter mais de 255 caracteres.',
                 'status.in' => 'O status deve ser "pendente" ou "concluida".',
+                'prioridade.required' => 'A prioridade é obrigatória.',
+                'prioridade.in' => 'A prioridade deve ser alta, média ou baixa.',
+
             ]);
 
             if ($validator->fails()) {

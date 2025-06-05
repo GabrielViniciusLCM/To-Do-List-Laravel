@@ -56,6 +56,7 @@
 </head>
 
 <body>
+    @yield('css')
     <div class="container mt-3">
         @auth
             <div class="text-end mb-2">
