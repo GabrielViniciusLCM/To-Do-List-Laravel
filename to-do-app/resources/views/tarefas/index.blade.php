@@ -26,6 +26,7 @@
                     <option value="">Todos os status</option>
                     <option value="pendente" {{ request('status') == 'pendente' ? 'selected' : '' }}>Pendente</option>
                     <option value="concluida" {{ request('status') == 'concluida' ? 'selected' : '' }}>Concluída</option>
+                    <option value="deletada" {{ request('status') == 'deletada' ? 'selected' : '' }}>Deletadas</option>
                 </select>
             </div>
 
@@ -52,42 +53,52 @@
             </thead>
             <tbody>
                 @foreach ($tarefas as $tarefa)
-                    <tr data-id="{{ $tarefa->id }}" class="{{ $tarefa->status === 'concluida' ? 'concluida' : '' }}">
-                        <td class="titulo" style="{{ $tarefa->status === 'concluida' ? 'text-decoration: line-through;' : '' }}">
+                    <tr data-id="{{ $tarefa->id }}" class="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'concluida' : '' }}">
+                        <td class="titulo" style="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'text-decoration: line-through;' : '' }}">
                             {{ $tarefa->titulo }}
                         </td>
-                        <td class="criada-em" style="{{ $tarefa->status === 'concluida' ? 'text-decoration: line-through;' : '' }}">
+                        <td class="criada-em" style="{{ ($tarefa->status === 'concluida' && !$tarefa->trashed()) ? 'text-decoration: line-through;' : '' }}">
                             {{ $tarefa->created_at->format('d/m/Y') }}
                         </td>
                         <td>
-                           
+                            @if (!$tarefa->trashed())
                                 <button class="status-toggle btn btn-sm {{ $tarefa->status === 'concluida' ? 'btn-success' : 'btn-secondary' }}"
-                                    data-status="{{ $tarefa->status }}"  title = "Alterar Status">
+                                    data-status="{{ $tarefa->status }}"  title="Alterar Status">
                                     <i class="fas fa-check"></i>
                                 </button>
-                           
-                           
-                            <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
-                            {{ ucfirst($tarefa->status) }}
-                            </span>
-                            
-                            
+
+                                <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ ucfirst($tarefa->status) }}
+                                </span>
+                            @else
+                                <span class="badge bg-danger">Deletada</span>
+                            @endif
                         </td>
                         <td>
                             <div class="d-flex gap-1">
-                                <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-info btn-sm" title = "Ver Detalhes">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('tarefas.edit', $tarefa) }}" class="btn btn-primary btn-sm"  title = "Editar Tarefa">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('tarefas.destroy', $tarefa) }}" method="POST" onsubmit="return confirm('Deseja excluir?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-danger btn-sm"  title = "Excluir Tarefa">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </form>
+                                @if (!$tarefa->trashed())
+                                    <a href="{{ route('tarefas.show', $tarefa) }}" class="btn btn-info btn-sm" title="Ver Detalhes">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('tarefas.edit', $tarefa) }}" class="btn btn-primary btn-sm" title="Editar Tarefa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="{{ route('tarefas.destroy', $tarefa) }}" method="POST" onsubmit="return confirm('Deseja excluir?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-danger btn-sm" title="Excluir Tarefa">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('tarefas.restore', $tarefa->id) }}" method="POST" onsubmit="return confirm('Deseja restaurar esta tarefa?')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="btn btn-warning btn-sm" title="Restaurar Tarefa">
+                                            <i class="fas fa-undo"></i> Restaurar
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -102,14 +113,14 @@
 
     {{-- Botão flutuante para nova tarefa --}}
     <a href="{{ route('tarefas.create') }}"
-       class="btn btn-success rounded-circle position-fixed shadow"
-       style="bottom: 20px; right: 20px; width: 60px; height: 60px; font-size: 30px; text-align: center; line-height: 42px;">
+        class="btn btn-success rounded-circle position-fixed shadow"
+        style="bottom: 20px; right: 20px; width: 60px; height: 60px; font-size: 30px; text-align: center; line-height: 42px;">
         +
     </a>
+   
 @endsection
 
 @section('scripts')
-
     {{-- JS para status toggle --}}
     <script>
         document.querySelectorAll('.status-toggle').forEach(function(button) {
@@ -127,31 +138,31 @@
                     },
                     body: JSON.stringify({status: newStatus})
                 })
-                    .then(response => {
-                        if (response.ok) {
-                            this.dataset.status = newStatus;
-                            this.classList.toggle('btn-success', newStatus === 'concluida');
-                            this.classList.toggle('btn-secondary', newStatus !== 'concluida');
+                .then(response => {
+                    if (response.ok) {
+                        this.dataset.status = newStatus;
+                        this.classList.toggle('btn-success', newStatus === 'concluida');
+                        this.classList.toggle('btn-secondary', newStatus !== 'concluida');
 
-                            // Badge
-                            const badge = row.querySelector('.badge');
-                            badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                            badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
+                        // Badge
+                        const badge = row.querySelector('.badge');
+                        badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                        badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
 
-                            // Riscado
-                            row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
-                            row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                        // Riscado
+                        row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
+                        row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
 
-                            // Cor da linha
-                            row.classList.toggle('concluida', newStatus === 'concluida');
+                        // Cor da linha
+                        row.classList.toggle('concluida', newStatus === 'concluida');
 
-                            // Efeito pulse
-                            row.classList.add('pulse');
-                            setTimeout(() => row.classList.remove('pulse'), 300);
-                        } else {
-                            alert('Erro ao atualizar o status.');
-                        }
-                    });
+                        // Efeito pulse
+                        row.classList.add('pulse');
+                        setTimeout(() => row.classList.remove('pulse'), 300);
+                    } else {
+                        alert('Erro ao atualizar o status.');
+                    }
+                });
             });
         });
     </script>

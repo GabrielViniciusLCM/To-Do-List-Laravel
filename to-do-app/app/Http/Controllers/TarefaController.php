@@ -14,23 +14,35 @@ class TarefaController extends Controller
     {
         $query = Tarefa::query();
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        // Verifica se quer filtrar só deletadas
+
+        if ($request->status == 'deletada') {
+            // Mostrar só tarefas deletadas (soft deleted)
+            $query->onlyTrashed();
+        } else {
+            // Mostrar só tarefas não deletadas
+            $query->whereNull('deleted_at');
         }
 
+        // Filtros opcionais
         if ($request->filled('titulo')) {
             $query->where('titulo', 'like', '%' . $request->titulo . '%');
         }
 
-        // Ordenar pendentes primeiro, depois concluidas,
-        // dentro de cada grupo do mais antigo para o mais novo
+        if ($request->filled('status') && in_array($request->status, ['pendente', 'concluida'])) {
+            $query->where('status', $request->status);
+        }
+
+        // Ordenação: pendentes primeiro, depois concluidas, dentro de cada grupo do mais antigo para o mais novo
         $query->orderByRaw("CASE WHEN status = 'pendente' THEN 0 ELSE 1 END")
             ->orderBy('created_at', 'asc');
 
+        // Paginação (5 por página)
         $tarefas = $query->paginate(5)->withQueryString();
 
         return view('tarefas.index', compact('tarefas'));
     }
+
 
 
 
@@ -146,4 +158,18 @@ class TarefaController extends Controller
             ], 500);
         }
     }
+
+    public function restore($id)
+    {
+        $tarefa = Tarefa::onlyTrashed()->findOrFail($id);
+        $tarefa->restore();
+
+        // Atualiza o status para 'pendente' ao restaurar
+        $tarefa->status = 'pendente';
+        $tarefa->save();
+
+        return redirect()->route('tarefas.index')->with('success', 'Tarefa restaurada com sucesso!');
+    }
+
+
 }
