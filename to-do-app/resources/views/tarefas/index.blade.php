@@ -118,6 +118,9 @@
                                     data-status="{{ $tarefa->status }}" title="Alterar Status">
                                     <i class="fas fa-check"></i>
                                 </button>
+                                <span class="badge {{ $tarefa->status === 'concluida' ? 'bg-success' : 'bg-secondary' }}">
+                                    {{ ucfirst($tarefa->status) }}
+                                </span>
                             @else
                                 <span class="badge bg-danger">Deletada</span>
                             @endif
@@ -251,10 +254,8 @@
                 this.classList.toggle('btn-secondary', newStatus !== 'concluida');
 
                 const badge = row.querySelector('.badge');
-                if (badge) {
-                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                    badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
-                }
+                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                badge.className = 'badge ' + (newStatus === 'concluida' ? 'bg-success' : 'bg-secondary');
 
                 row.querySelector('.titulo').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
                 row.querySelector('.criada-em').style.textDecoration = newStatus === 'concluida' ? 'line-through' : 'none';
