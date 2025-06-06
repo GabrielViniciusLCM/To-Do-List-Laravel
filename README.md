@@ -96,7 +96,14 @@ Siga os passos abaixo para configurar e executar a aplicação localmente:
    php artisan db:seed
    ```
 
-8. **Inicie o servidor local:**
+8. **Baixe arquivos do vite**
+
+```bash
+npm install
+npm run build
+```
+
+9. **Inicie o servidor local:**
 
    ```bash
    php artisan serve
