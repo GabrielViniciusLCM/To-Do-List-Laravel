@@ -6,6 +6,15 @@ Esta aplicação To-Do foi desenvolvida com foco na **intuitividade** e **facili
 
 ---
 
+## Requisitos:
+
+| Ferramenta    | Obrigatório | Versão mínima |
+| ------------- | ----------- | ------------- |
+| PHP           | ✅           | 8.1           |
+| Composer      | ✅           | —             |
+| Node.js & NPM | ✅           | Node 16+      |
+| MySQL/MariaDB | ✅           | —             |
+
 ## Funcionalidades Principais
 
 - **Botão flutuante para adicionar tarefas:** Um botão localizado no canto inferior direito permite a criação rápida de novas tarefas, seguindo uma prática comum em aplicações modernas.
