@@ -58,6 +58,7 @@ Siga os passos abaixo para configurar e executar a aplicação localmente:
    ```bash
    git clone https://github.com/GabrielViniciusLCM/To-Do-List-Laravel.git
    cd To-Do-List-Laravel
+   cd to-do-app
 
 2. **Instale as dependências do PHP via Composer:**
 
